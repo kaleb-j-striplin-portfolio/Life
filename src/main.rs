@@ -2,12 +2,13 @@
 #![no_main]
 
 use cortex_m_rt::entry;
-use embedded_hal::{digital::OutputPin, delay::DelayNs};
+use embedded_hal::{digital::{OutputPin,InputPin}, delay::DelayNs};
 use microbit::{
     board::Board,
     hal::{
         timer::Timer,
     },
+    display::blocking::Display
 };
 
 use panic_rtt_target as _;
@@ -26,24 +27,42 @@ fn init() -> ! {
     rtt_init_print!();
     let mut board = Board::take().unwrap();
     let mut timer = Timer::new(board.TIMER0);
+    let mut button = board.buttons.button_a;
+    let game_board_heart = [
+            [0, 1, 0, 1, 0],
+            [1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 1],
+            [0, 1, 0, 1, 0],
+            [0, 0, 1, 0, 0],
+        ];
+    let empty_board_heart = [
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+        ];
+    let mut display = Display::new(board.display_pins);
 
-    board.display_pins.col1.set_low().unwrap();
+
+    // board.display_pins.col1.set_low().unwrap();
 
     let mut state = State::LedOff;
 
     loop {
-        state = match state {
-            State::LedOff => {
-                board.display_pins.row1.set_high().unwrap();
-                rprintln!("high");
-                State::LedOn
-            }
-            State::LedOn => {
-                board.display_pins.row1.set_low().unwrap();
-                rprintln!("low");
+        let pressed = button.is_low().unwrap();
+        state = match (pressed, state) {
+            (true, State::LedOn) => {
+                display.show(&mut timer, game_board_heart, 10);
+                rprintln!("heart");
                 State::LedOff
             }
+            _ => {
+                display.show(&mut timer, empty_board_heart, 10);
+                rprintln!("none");
+                State::LedOn
+            }
         };
-        timer.delay_ms(2000);
+        timer.delay_ms(100);
     }
 }
