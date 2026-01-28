@@ -10,6 +10,7 @@ dependencies = [
  "cortex-m-rt",
  "embedded-hal 1.0.0",
  "microbit-v2",
+ "nrf52833-hal",
  "panic-rtt-target",
  "rtt-target",
 ]
@@ -228,6 +229,7 @@ dependencies = [
  "cfg-if",
  "cortex-m",
  "embedded-dma",
+ "embedded-hal 0.2.7",
  "embedded-hal 1.0.0",
  "embedded-io",
  "embedded-storage",

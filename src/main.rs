@@ -10,6 +10,8 @@ use microbit::{
     },
     display::blocking::Display
 };
+use nrf52833_hal::Rng;
+
 
 use panic_rtt_target as _;
 use rtt_target::{rprintln, rtt_init_print};
@@ -25,35 +27,48 @@ enum State {
 #[entry]
 fn init() -> ! {
     rtt_init_print!();
-    let mut board = Board::take().unwrap();
+    let board: Board = Board::take().unwrap();
     let mut timer = Timer::new(board.TIMER0);
     let mut button = board.buttons.button_a;
-    let game_board_heart = [
+    let _game_board_heart: [[u8; 5]; 5] = [
             [0, 1, 0, 1, 0],
             [1, 0, 1, 0, 1],
             [1, 0, 0, 0, 1],
             [0, 1, 0, 1, 0],
             [0, 0, 1, 0, 0],
         ];
-    let empty_board_heart = [
+    let empty_board_heart: [[u8; 5]; 5] = [
             [0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0],
         ];
-    let mut display = Display::new(board.display_pins);
-
-
-    // board.display_pins.col1.set_low().unwrap();
-
-    let mut state = State::LedOff;
+    let mut random_game_board: [[u8; 5]; 5] = [[0u8; 5]; 5];
+    let mut rng: Rng = Rng::new(board.RNG);
+    let mut display: Display = Display::new(board.display_pins);
+    let mut state: State = State::LedOff;
 
     loop {
+        let mut buf: [u8; 25] = [0; 25];
+        rng.random(&mut buf);
+
+        rprintln!("buffer {:?}", buf);
+
+        let mut i = 0;
+        for y in 0..5 {
+            for x in 0..5 {
+                random_game_board[y][x] = buf[i]%2;
+                i+=1;
+            }
+        }
+
+        rprintln!("board {:?}", random_game_board);
+
         let pressed = button.is_low().unwrap();
         state = match (pressed, state) {
             (true, State::LedOn) => {
-                display.show(&mut timer, game_board_heart, 10);
+                display.show(&mut timer, random_game_board, 10);
                 rprintln!("heart");
                 State::LedOff
             }
